@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無限圓周率背誦</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; }
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; }
+        #pi-display::-webkit-scrollbar, .modal-list::-webkit-scrollbar { width: 8px; }
+        #pi-display::-webkit-scrollbar-track, .modal-list::-webkit-scrollbar-track { background: #1a202c; }
+        #pi-display::-webkit-scrollbar-thumb, .modal-list::-webkit-scrollbar-thumb { background-color: #4a5568; border-radius: 10px; border: 2px solid #1a202c; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-start sm:justify-center p-2 sm:p-4">
+
+    <div class="w-full max-w-4xl text-center">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-cyan-400 mb-1">無限圓周率 (π) 背誦</h1>
+        <p class="text-base sm:text-lg text-gray-400 mb-4 sm:mb-6">支援高度自訂的儲存設定</p>
+
+        <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-700">
+            <div id="pi-display" class="w-full min-h-[160px] h-[30vh] md:h-[35vh] lg:h-80 text-left text-xl sm:text-2xl md:text-3xl font-mono p-4 bg-gray-900 rounded-lg overflow-y-auto mb-4 border border-gray-600 leading-relaxed break-all">
+                <span id="pi-digits">3.</span>
+            </div>
+            <p id="status-text" class="text-sm text-gray-500 mb-4 h-5 transition-opacity duration-300"></p>
+            <div class="flex justify-center items-center mb-4 sm:mb-6">
+                <div class="bg-cyan-500 bg-opacity-10 border border-cyan-500 text-cyan-400 p-3 sm:p-4 rounded-lg shadow-lg">
+                    <span class="text-lg sm:text-xl">目前小數位數：</span>
+                    <span id="digit-count" class="text-2xl sm:text-3xl font-bold">0</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                <button id="start-btn" class="px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">開始</button>
+                <button id="stop-btn" class="px-4 py-3 bg-red-600 hover:bg-red-700 rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>暫停</button>
+                <button id="reset-btn" class="px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">重設</button>
+                <button id="manual-save-btn" class="px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">手動儲存</button>
+                <button id="manage-saves-btn" class="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">管理存檔</button>
+                <button id="settings-btn" class="px-4 py-3 bg-teal-600 hover:bg-teal-700 rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">設定</button>
+            </div>
+
+            <!-- Manual Jump Section -->
+            <div class="mt-4 pt-4 border-t border-gray-600">
+                <div class="flex justify-center gap-2">
+                    <input type="text" id="jump-input" placeholder="貼上已知圓周率數字直接跳轉" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button id="jump-btn" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">跳轉進度</button>
+                </div>
+                <div class="flex items-center justify-center mt-3">
+                    <input id="jump-auto-start-checkbox" type="checkbox" class="h-4 w-4 bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-600 rounded disabled:opacity-50">
+                    <label for="jump-auto-start-checkbox" class="ml-2 text-gray-300 text-sm">跳轉後自動開始</label>
+                </div>
+            </div>
+
+             <div class="mt-6">
+                <label for="speed-slider" class="text-gray-400">速度 (毫秒/位數): <span id="speed-value">100</span>ms</label>
+                <input type="range" id="speed-slider" min="1" max="500" value="100" class="w-full mt-2 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-backdrop" class="hidden fixed inset-0 bg-black bg-opacity-75 z-40"></div>
+    <!-- Naming Modal -->
+    <div id="naming-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 p-4"><div class="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-gray-700"><h2 id="naming-title" class="text-2xl font-bold text-blue-400 mb-4"></h2><p class="text-gray-400 mb-4">為此項目命名：</p><input id="naming-input" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500"><div class="flex gap-4"><button id="confirm-naming-btn" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg">確認</button><button id="cancel-naming-btn" class="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg">取消</button></div></div></div>
+    <!-- Manage Saves Modal -->
+    <div id="manage-saves-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 p-4"><div class="bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-lg w-full border border-gray-700 flex flex-col max-h-[80vh]"><h2 class="text-2xl font-bold text-indigo-400 mb-4">管理存檔</h2><div id="saves-list" class="flex-grow overflow-y-auto space-y-3 pr-2 modal-list"></div><button id="close-manage-saves-modal-btn" class="mt-6 px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg self-center">關閉</button></div></div>
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 p-4"><div class="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-gray-700 text-center"><h2 class="text-2xl font-bold text-red-400 mb-4">請確認</h2><p id="confirm-modal-text" class="text-gray-300 mb-6"></p><div class="flex gap-4"><button id="confirm-modal-yes-btn" class="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg">確定</button><button id="confirm-modal-no-btn" class="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg">取消</button></div></div></div>
+    <!-- Initial Load Modal -->
+    <div id="initial-load-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 p-4"><div class="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full border border-gray-700 text-center"><h2 class="text-2xl font-bold text-cyan-400 mb-4">發現進度</h2><p id="initial-modal-info" class="text-gray-300 mb-6"></p><div class="flex items-center justify-center mb-6"><input id="initial-auto-start-checkbox" type="checkbox" class="h-4 w-4 bg-gray-700 border-gray-600 text-cyan-500 focus:ring-cyan-600 rounded"><label for="initial-auto-start-checkbox" class="ml-2 text-gray-300">載入後自動開始</label></div><div class="flex gap-4"><button id="initial-modal-load-btn" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg">載入</button><button id="initial-modal-new-btn" class="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg">重新開始</button></div></div></div>
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 p-4"><div class="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-lg w-full border border-gray-700 text-left space-y-6"><h2 class="text-2xl font-bold text-teal-400 mb-4 text-center">儲存設定</h2><div><h3 class="text-lg font-semibold text-gray-300 mb-2">自動儲存目的地</h3><p class="text-sm text-gray-400 mb-2">所有自動儲存將會覆寫此存檔槽：</p><select id="auto-save-target-select" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2"></select></div><div><h3 class="text-lg font-semibold text-gray-300 mb-2">手動儲存行為</h3><div class="space-y-2"><div class="flex items-center"><input type="radio" id="manual-ask" name="manual-behavior" value="ask" class="h-4 w-4"><label for="manual-ask" class="ml-2">每次都詢問要存到哪裡</label></div><div class="flex items-center"><input type="radio" id="manual-create" name="manual-behavior" value="create" class="h-4 w-4"><label for="manual-create" class="ml-2">永遠建立一個新的存檔</label></div><div class="flex items-center"><input type="radio" id="manual-specific" name="manual-behavior" value="specific" class="h-4 w-4"><label for="manual-specific" class="ml-2">永遠覆寫指定的存檔槽：</label></div></div><select id="manual-save-target-select" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 mt-2 hidden"></select></div><div class="flex gap-4 mt-8"><button id="save-settings-btn" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg">儲存設定</button><button id="cancel-settings-btn" class="flex-1 px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg">取消</button></div></div></div>
+    <!-- Ask Save Destination Modal -->
+    <div id="ask-save-destination-modal" class="hidden fixed inset-0 flex items-center justify-center z-50 p-4"><div class="bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-lg w-full border border-gray-700 flex flex-col max-h-[80vh]"><h2 class="text-2xl font-bold text-blue-400 mb-4">選擇儲存位置</h2><div id="save-destination-list" class="flex-grow overflow-y-auto space-y-3 pr-2 modal-list"></div><div class="mt-4 pt-4 border-t border-gray-700"><button id="create-new-from-ask-btn" class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg">建立新的手動存檔</button></div><button id="cancel-ask-destination-btn" class="mt-6 px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg self-center">取消</button></div></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const piContainer = document.getElementById('pi-digits');
+            const digitCount = document.getElementById('digit-count');
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const manualSaveBtn = document.getElementById('manual-save-btn');
+            const manageSavesBtn = document.getElementById('manage-saves-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+            const jumpInput = document.getElementById('jump-input');
+            const jumpBtn = document.getElementById('jump-btn');
+            const jumpAutoStartCheckbox = document.getElementById('jump-auto-start-checkbox');
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+            const statusText = document.getElementById('status-text');
+            const modalBackdrop = document.getElementById('modal-backdrop');
+            
+            let currentIndex = 0;
+            let intervalId = null;
+            let currentSpeed = 100;
+            let piIterator;
+            const SAVES_KEY = 'piReciterSaves_v5';
+            const SETTINGS_KEY = 'piReciterSettings_v5';
+
+            function* piDigitGenerator() { let q=1n,r=180n,t=60n,i=2n;while(true){let d=(q*(27n*i-12n)+5n*r)/(5n*t);let u=3n*(3n*i+1n)*(3n*i+2n);r=10n*u*(q*(5n*i-2n)+r-d*t);q=10n*q*i*(2n*i-1n);t=t*u;i=i+1n;yield Number(d);}}
+            function showStatus(message, duration = 3000) { statusText.textContent=message;statusText.style.opacity=1;if(duration!==Infinity)setTimeout(()=>{statusText.style.opacity=0},duration-500);}
+            function setControlsState(state) { const a=state==='idle',b=state==='running',c=state==='busy';startBtn.disabled=b||c;stopBtn.disabled=a||c;resetBtn.disabled=b||c;manualSaveBtn.disabled=b||c;manageSavesBtn.disabled=b||c;settingsBtn.disabled=b||c;speedSlider.disabled=b||c;jumpBtn.disabled=b||c;jumpInput.disabled=b||c;jumpAutoStartCheckbox.disabled=b||c;}
+            function addDigit() {piContainer.insertAdjacentText('beforeend',piIterator.next().value.toString());currentIndex++;digitCount.textContent=currentIndex;if(currentIndex>0&&currentIndex%100===0)autoSaveState();}
+            function startReciting() {if(intervalId)return;setControlsState('running');intervalId=setInterval(addDigit,currentSpeed);}
+            function stopReciting() {clearInterval(intervalId);intervalId=null;setControlsState('idle');if(currentIndex>=0)autoSaveState();}
+            
+            function getSaves() {const s=localStorage.getItem(SAVES_KEY);return s?JSON.parse(s):[];}
+            function persistSaves(s){localStorage.setItem(SAVES_KEY,JSON.stringify(s));}
+            function getSettings() {const s=localStorage.getItem(SETTINGS_KEY);return s?JSON.parse(s):{autoSaveTargetId:null,manualSaveBehavior:'ask',manualSaveTargetId:null};}
+            function persistSettings(s){localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));}
+
+            function autoSaveState() {
+                let saves = getSaves();
+                const settings = getSettings();
+                let autoSaveSlot = saves.find(s => s.id === settings.autoSaveTargetId);
+                const newSaveData = { count: currentIndex, speed: currentSpeed, timestamp: new Date().toISOString() };
+                if (autoSaveSlot) {
+                    Object.assign(autoSaveSlot, newSaveData);
+                } else {
+                    const newId = Date.now();
+                    saves.unshift({ id: newId, name: '自動儲存', ...newSaveData });
+                    settings.autoSaveTargetId = newId;
+                    persistSettings(settings);
+                }
+                persistSaves(saves);
+                showStatus(`進度已自動儲存`);
+            }
+
+            function resetApplication(shouldArchive = false) {
+                 stopReciting();
+                 if(shouldArchive) {
+                     let saves = getSaves();
+                     const settings = getSettings();
+                     const autoSaveIndex = saves.findIndex(s => s.id === settings.autoSaveTargetId);
+                     if (autoSaveIndex > -1 && saves[autoSaveIndex].count > 0) {
+                         saves[autoSaveIndex].name = `舊的 - ${saves[autoSaveIndex].name} [${new Date(saves[autoSaveIndex].timestamp).toLocaleTimeString('zh-TW')}]`;
+                     }
+                 }
+                 currentIndex = 0;
+                 piContainer.innerHTML = "3.";
+                 digitCount.textContent = "0";
+                 piIterator = piGenerator();
+                 piIterator.next();
+                 autoSaveState();
+            }
+
+            async function processLoadAsync(saveData, autoStart = false) {
+                setControlsState('busy');
+                showStatus(`正在載入 ${saveData.count} 位數字... (0%)`, Infinity);
+                resetApplication(false);
+                currentSpeed = saveData.speed;
+                speedSlider.value = currentSpeed;
+                speedValue.textContent = currentSpeed;
+                const chunkSize = 10000;
+                let loadedCount = 0;
+                while (loadedCount < saveData.count) {
+                    const currentChunkEnd = Math.min(loadedCount + chunkSize, saveData.count);
+                    let digitsChunk = [];
+                    for(let i=loadedCount;i<currentChunkEnd;i++)digitsChunk.push(piIterator.next().value);
+                    piContainer.insertAdjacentText('beforeend', digitsChunk.join(''));
+                    loadedCount = currentChunkEnd;
+                    const progress = Math.round((loadedCount / saveData.count) * 100);
+                    showStatus(`正在載入 ${saveData.count} 位數字... (${progress}%)`, Infinity);
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+                currentIndex = saveData.count;
+                digitCount.textContent = currentIndex;
+                showStatus(`已成功載入進度。`);
+                autoSaveState();
+                if (autoStart) startReciting();
+                else setControlsState('idle');
+            }
+             
+            async function processJumpAsync(targetCount, digitsToRender, autoStart = false) {
+                setControlsState('busy');
+                showStatus(`正在計算跳轉位置... (0%)`, Infinity);
+                resetApplication(false);
+                
+                const calculationChunkSize = 25000;
+                let processedCount = 0;
+                while (processedCount < targetCount) {
+                    const currentChunkEnd = Math.min(processedCount + calculationChunkSize, targetCount);
+                    for (let i = processedCount; i < currentChunkEnd; i++) {
+                        piIterator.next();
+                    }
+                    processedCount = currentChunkEnd;
+                    const progress = Math.round((processedCount / targetCount) * 100);
+                    showStatus(`正在計算跳轉位置... (${progress}%)`, Infinity);
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+                showStatus('計算完成，正在渲染數字... (0%)', Infinity);
+                const renderChunkSize = 50000;
+                let renderedCount = 0;
+                while(renderedCount < targetCount) {
+                    const chunk = digitsToRender.substring(renderedCount, renderedCount + renderChunkSize);
+                    piContainer.insertAdjacentText('beforeend', chunk);
+                    renderedCount += chunk.length;
+                    const progress = Math.round((renderedCount / targetCount) * 100);
+                    showStatus(`正在渲染數字... (${progress}%)`, Infinity);
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+                currentIndex = targetCount;
+                digitCount.textContent = currentIndex;
+                showStatus(`已成功跳轉至 ${targetCount} 位。`);
+                autoSaveState();
+                if (autoStart) startReciting();
+                else setControlsState('idle');
+            }
+            
+            const modals={initial:document.getElementById('initial-load-modal'),naming:document.getElementById('naming-modal'),manage:document.getElementById('manage-saves-modal'),settings:document.getElementById('settings-modal'),confirm:document.getElementById('confirm-modal'),askDestination:document.getElementById('ask-save-destination-modal')};
+            function openModal(modal){modalBackdrop.classList.remove('hidden');modal.classList.remove('hidden');}
+            function closeModal(modal){modalBackdrop.classList.add('hidden');modal.classList.add('hidden');}
+            function showConfirm(text){return new Promise(resolve=>{const a=document.getElementById('confirm-modal-text'),b=document.getElementById('confirm-modal-yes-btn'),c=document.getElementById('confirm-modal-no-btn');a.textContent=text;openModal(modals.confirm);const d=e=>{closeModal(modals.confirm);b.onclick=null;c.onclick=null;resolve(e)};b.onclick=()=>d(true);c.onclick=()=>d(false)})}
+            function openNamingModal({ isRename = false, saveId = null, initialName = '' }) {
+                const title = document.getElementById('naming-title');
+                const input = document.getElementById('naming-input');
+                const confirmBtn = document.getElementById('confirm-naming-btn');
+                title.textContent = isRename ? '重新命名存檔' : '建立新存檔';
+                input.value = initialName;
+                openModal(modals.naming);
+                confirmBtn.onclick = () => {
+                    const newName = input.value.trim();
+                    if (!newName) { showStatus('名稱不可為空。', 2000); return; }
+                    let saves = getSaves();
+                    if (isRename) {
+                        const saveToRename = saves.find(s => s.id === saveId);
+                        if (saveToRename) saveToRename.name = newName;
+                    } else {
+                        saves.push({ id: Date.now(), name: newName, count: currentIndex, speed: currentSpeed, timestamp: new Date().toISOString() });
+                    }
+                    persistSaves(saves);
+                    showStatus(isRename ? '重新命名成功' : '儲存成功');
+                    closeModal(modals.naming);
+                    if (!modals.manage.classList.contains('hidden')) { populateSavesList(); }
+                };
+            }
+            
+            function populateSavesList() { /* ... unchanged ... */ const a=getSaves(),b=document.getElementById('saves-list'),c=getSettings();b.innerHTML='';const d=e=>{const f=document.createElement('div');f.className='bg-gray-700 p-3 rounded-lg flex items-center justify-between';const g=new Date(e.timestamp).toLocaleString('zh-TW');f.innerHTML=`<div><div class="flex items-center gap-2"><p class="font-semibold text-white">${e.name}</p>${e.id===c.autoSaveTargetId?'<span class="text-xs bg-cyan-800 text-cyan-300 px-2 py-0.5 rounded-full">自動儲存</span>':''}</div><p class="text-sm text-gray-400">位數: ${e.count} | ${g}</p></div><div class="flex gap-2"><button class="rename-btn px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-sm rounded-md">命名</button><button class="load-btn px-3 py-2 bg-blue-600 hover:bg-blue-700 text-sm rounded-md">載入</button><button class="delete-btn px-3 py-2 bg-red-600 hover:bg-red-700 text-sm rounded-md">刪除</button></div>`;f.querySelector('.load-btn').addEventListener('click',()=>{closeModal(modals.manage);processLoadAsync(e)});f.querySelector('.delete-btn').addEventListener('click',async()=>{if(e.id===c.autoSaveTargetId){showStatus('無法刪除目前的自動儲存目標。');return}const h=await showConfirm(`確定要刪除存檔 "${e.name}" 嗎？`);if(h){let i=getSaves();const j=i.filter(s=>s.id!==e.id);persistSaves(j);populateSavesList()}});f.querySelector('.rename-btn').addEventListener('click',()=>{openNamingModal({isRename:true,saveId:e.id,initialName:e.name});closeModal(modals.manage)});return f};if(a.length>0){a.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).forEach(e=>b.appendChild(d(e)))}else{b.innerHTML='<p class="text-gray-500 text-center">沒有任何儲存紀錄。</p>'}}
+            function populateSettingsModal() { /* ... unchanged ... */ const a=getSaves(),b=getSettings(),c=document.getElementById('auto-save-target-select'),d=document.getElementById('manual-save-target-select');c.innerHTML='';d.innerHTML='';a.forEach(e=>{const f=document.createElement('option');f.value=e.id;f.textContent=`${e.name} (${e.count}位)`;c.appendChild(f.cloneNode(true));d.appendChild(f)});c.value=b.autoSaveTargetId;document.querySelector(`input[name="manual-behavior"][value="${b.manualSaveBehavior}"]`).checked=true;d.value=b.manualSaveTargetId;d.classList.toggle('hidden',b.manualSaveBehavior!=='specific')}
+
+            function init() {
+                // First time setup
+                let saves = getSaves();
+                let settings = getSettings();
+                if (saves.length === 0) {
+                    const newId = Date.now();
+                    saves.push({ id: newId, name: '預設存檔', count: 0, speed: 100, timestamp: new Date().toISOString() });
+                    settings.autoSaveTargetId = newId;
+                    persistSaves(saves);
+                    persistSettings(settings);
+                }
+
+                piIterator = piGenerator();
+                piIterator.next();
+
+                // Event Listeners
+                startBtn.addEventListener('click',startReciting);
+                stopBtn.addEventListener('click',stopReciting);
+                resetBtn.addEventListener('click',async()=>{const a=await showConfirm('確定要重設嗎？目前的自動儲存將會被歸檔。');if(a)resetApplication(true)});
+                speedSlider.addEventListener('input',(e)=>{currentSpeed=parseInt(e.target.value,10);speedValue.textContent=currentSpeed});
+                speedSlider.addEventListener('change',autoSaveState);
+                manageSavesBtn.addEventListener('click',()=>{stopReciting();populateSavesList();openModal(modals.manage)});
+                settingsBtn.addEventListener('click', ()=>{stopReciting();populateSettingsModal();openModal(modals.settings)});
+                document.getElementById('close-manage-saves-modal-btn').addEventListener('click',()=>closeModal(modals.manage));
+                document.getElementById('cancel-settings-btn').addEventListener('click',()=>closeModal(modals.settings));
+                document.getElementById('save-settings-btn').addEventListener('click', ()=>{const a={};a.autoSaveTargetId=parseInt(document.getElementById('auto-save-target-select').value);a.manualSaveBehavior=document.querySelector('input[name="manual-behavior"]:checked').value;a.manualSaveTargetId=parseInt(document.getElementById('manual-save-target-select').value)||null;persistSettings(a);showStatus('設定已儲存');closeModal(modals.settings)});
+                document.querySelectorAll('input[name="manual-behavior"]').forEach(r=>{r.addEventListener('change',e=>{document.getElementById('manual-save-target-select').classList.toggle('hidden',e.target.value!=='specific')})});
+                 manualSaveBtn.addEventListener('click', async () => { /* ... unchanged ... */ stopReciting();if(currentIndex===0){showStatus('沒有可儲存的進度。');return}const a=getSettings(),b=getSaves();switch(a.manualSaveBehavior){case'create':openNamingModal({initialName:`手動儲存 - ${new Date().toLocaleString('sv')}`});break;case'specific':const c=b.find(s=>s.id===a.manualSaveTargetId);if(c){if(await showConfirm(`確定要覆寫存檔 "${c.name}" 嗎？`)){Object.assign(c,{count:currentIndex,speed:currentSpeed,timestamp:new Date().toISOString()});persistSaves(b);showStatus(`已覆寫存檔 "${c.name}"`)}}else{showStatus('找不到指定的手動存檔目標。')}break;case'ask':const d=document.getElementById('save-destination-list');d.innerHTML='';b.forEach(e=>{const f=document.createElement('button');f.className='w-full text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg';f.innerHTML=`<p class="font-semibold">${e.name}</p><p class="text-sm text-gray-400">${e.count}位</p>`;f.onclick=async()=>{if(await showConfirm(`確定要覆寫存檔 "${e.name}" 嗎？`)){Object.assign(e,{count:currentIndex,speed:currentSpeed,timestamp:new Date().toISOString()});persistSaves(b);showStatus(`已覆寫存檔 "${e.name}"`);closeModal(modals.askDestination)}};d.appendChild(f)});document.getElementById('create-new-from-ask-btn').onclick=()=>{closeModal(modals.askDestination);openNamingModal({initialName:`手動儲存 - ${new Date().toLocaleString('sv')}`})};document.getElementById('cancel-ask-destination-btn').onclick=()=>closeModal(modals.askDestination);openModal(modals.askDestination);break}});
+                document.getElementById('cancel-naming-btn').addEventListener('click',()=>closeModal(modals.naming));
+                jumpBtn.addEventListener('click', () => {
+                    if(intervalId) { showStatus('請先暫停才能進行跳轉。'); return; }
+                    let rawValue = jumpInput.value.trim();
+                    if(rawValue.startsWith('3.')) rawValue = rawValue.substring(2);
+                    else if(rawValue.startsWith('3')) rawValue = rawValue.substring(1);
+                    const userInputDigits = rawValue.replace(/[^0-9]/g, '');
+                    if(userInputDigits.length === 0) { showStatus('請輸入有效的圓周率數字。'); return; }
+                    const targetCount = userInputDigits.length;
+                    const autoStart = jumpAutoStartCheckbox.checked;
+                    processJumpAsync(targetCount, userInputDigits, autoStart);
+                });
+
+                // Initial Load
+                const autoSaveSlot = getSaves().find(s => s.id === getSettings().autoSaveTargetId);
+                if (autoSaveSlot && autoSaveSlot.count > 0) {
+                    const { count, speed, name } = autoSaveSlot;
+                    const initialModal=modals.initial,info=document.getElementById('initial-modal-info'),loadBtn=document.getElementById('initial-modal-load-btn'),newBtn=document.getElementById('initial-modal-new-btn');
+                    info.textContent=`在「${name}」存檔中發現進度 ${count} 位。要載入嗎？`;
+                    openModal(initialModal);
+                    loadBtn.onclick=()=>{closeModal(initialModal);const a=document.getElementById('initial-auto-start-checkbox').checked;processLoadAsync({count,speed},a)};
+                    newBtn.onclick=()=>{closeModal(initialModal); setControlsState('idle');};
+                } else {
+                    setControlsState('idle');
+                }
+            }
+            
+            // Renamed piDigitGenerator to piGenerator to fix reference error in resetApplication
+            const piGenerator = piDigitGenerator;
+            init();
+        });
+    </script>
+</body>
+</html>
+
